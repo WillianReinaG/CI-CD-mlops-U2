@@ -2,7 +2,7 @@
 Simulación académica de un clasificador de estado (no uso clínico real).
 
 Entradas mínimas: al menos tres magnitudes entre las admitidas.
-Salida: una de cuatro etiquetas de texto.
+Salida: una de cinco etiquetas de texto.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ CATEGORIAS = (
     "ENFERMEDAD LEVE",
     "ENFERMEDAD AGUDA",
     "ENFERMEDAD CRÓNICA",
+    "ENFERMEDAD TERMINAL",
 )
 
 CAMPOS_PERMITIDOS = frozenset(
@@ -63,6 +64,7 @@ def contar_valores_usados(datos: Mapping[str, Any]) -> int:
 def clasificar_estado(datos: Mapping[str, Any]) -> str:
     """
     Reglas docentes (prioridad de arriba hacia abajo):
+    - TERMINAL: crisis extrema de presión o perfil de máximo riesgo.
     - AGUDA: criterio de descompensación con umbrales fijos.
     - CRÓNICA: indicador de enfermedad previa en el registro.
     - NO ENFERMO: perfil bajo riesgo según PA, lípidos/glucosa y tabaco.
@@ -75,6 +77,8 @@ def clasificar_estado(datos: Mapping[str, Any]) -> str:
     enf = _int(datos.get("presencia_enfermedad"), 0)
     fum = _bool(datos.get("fumador", False))
 
+    if sis >= 200 or dia >= 120 or (sis >= 190 and enf == 1):
+        return "ENFERMEDAD TERMINAL"
     if sis >= 180 or dia >= 110 or (sis >= 160 and glu >= 3):
         return "ENFERMEDAD AGUDA"
     if enf == 1:

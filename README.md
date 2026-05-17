@@ -10,6 +10,9 @@ Proyecto unidad uno MLOps
   - `ENFERMEDAD LEVE`
   - `ENFERMEDAD AGUDA`
   - `ENFERMEDAD CRÓNICA`
+  - `ENFERMEDAD TERMINAL`
+- La ruta **`GET /estadisticas`** devuelve el reporte de predicciones (totales por categoría, últimas 5 y fecha de la última).
+- Cada predicción se guarda en `datos/predicciones.jsonl` y se actualiza `datos/reporte_estadisticas.txt`.
 - La página es un formulario mínimo que llama a `/predecir`.
 
 La “predicción” es una **función determinista** definida en `modelo_simulado.py`.
@@ -62,7 +65,24 @@ docker build -t estado-clinico-demo .
 docker run --rm -p 5000:5000 estado-clinico-demo
 ```
 
-Servicio disponible en `http://localhost:5000/predecir` (POST) y `http://localhost:5000/` (formulario).
+Servicio disponible en:
+
+- `http://localhost:5000/` (formulario)
+- `http://localhost:5000/predecir` (POST)
+- `http://localhost:5000/estadisticas` (GET)
+
+Para conservar estadísticas entre reinicios del contenedor, monte un volumen:
+
+```bash
+docker run --rm -p 5000:5000 -v "%cd%\datos:/app/datos" estado-clinico-demo
+```
+
+### Ejemplo terminal (ENFERMEDAD TERMINAL)
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:5000/predecir -Method POST -ContentType "application/json" -Body '{"presion_sistolica":195,"presion_diastolica":115,"nivel_colesterol":3,"nivel_glucosa":3,"presencia_enfermedad":1,"fumador":true}'
+Invoke-RestMethod -Uri http://127.0.0.1:5000/estadisticas -Method GET
+```
 
 ## Propuesta breve de pipeline MLOps (ilustrativa)
 

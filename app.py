@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from flask import Flask, jsonify, render_template, request
 
-from modelo_simulado import CAMPOS_PERMITIDOS, clasificar_estado, validar_entrada_minima
+from modelo_simulado import CAMPOS_PERMITIDOS, CATEGORIAS, clasificar_estado, validar_entrada_minima
+from registro_predicciones import obtener_estadisticas, registrar_prediccion
 
 app = Flask(__name__)
 
@@ -49,7 +50,28 @@ def predecir():
     except (KeyError, TypeError, ValueError) as exc:
         return jsonify({"ok": False, "error": f"Dato inválido: {exc}"}), 400
 
-    return jsonify({"ok": True, "estado": estado, "entrada": payload})
+    registro = registrar_prediccion(estado, payload)
+    return jsonify(
+        {
+            "ok": True,
+            "estado": estado,
+            "entrada": payload,
+            "registrado_en": registro["fecha"],
+        }
+    )
+
+
+@app.route("/estadisticas", methods=["GET"])
+def estadisticas():
+    """Reporte de predicciones para médicos (lee el archivo de registro)."""
+    datos = obtener_estadisticas()
+    return jsonify(
+        {
+            "ok": True,
+            "categorias_validas": list(CATEGORIAS),
+            **datos,
+        }
+    )
 
 
 if __name__ == "__main__":

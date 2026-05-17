@@ -19,3 +19,7 @@ build/
 # OS
 Thumbs.db
 Desktop.ini
+
+# Registros de predicciones en ejecución
+datos/predicciones.jsonl
+datos/reporte_estadisticas.txt

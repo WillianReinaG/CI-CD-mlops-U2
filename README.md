@@ -1,64 +1,77 @@
-# CI/CD MLOps — Unidad 2
+# Servicio de estado clínico simulado
 
-Repositorio para versionar y automatizar la solución de predicción de estado clínico desarrollada en la unidad anterior.
+Proyecto unidad uno MLOps
 
-## Problema
+## Qué hace
 
-Los médicos necesitan apoyarse en un modelo que, a partir de signos y datos del paciente, estime el **estado de enfermedad** y oriente la atención. En la unidad 1 se expuso un servicio local con Docker que devolvía una de cuatro categorías. En esta unidad el mismo escenario se mantiene, pero el foco pasa a **organizar el código en GitHub**, incorporar **nuevos requerimientos funcionales** y definir un **pipeline de CI/CD** con GitHub Actions.
+- Expone un servicio **Flask** en el puerto **5000**.
+- La ruta **`POST /predecir`** recibe JSON y devuelve una etiqueta entre:
+  - `NO ENFERMO`
+  - `ENFERMEDAD LEVE`
+  - `ENFERMEDAD AGUDA`
+  - `ENFERMEDAD CRÓNICA`
+- La página es un formulario mínimo que llama a `/predecir`.
 
-## Propósito de este repositorio
+La “predicción” es una **función determinista** definida en `modelo_simulado.py`.
 
-- Centralizar la solución de predicción clínica simulada bajo control de versiones.
-- Documentar el proyecto y su evolución mediante ramas y pull requests.
-- Ampliar el modelo simulado (quinta categoría y reporte de estadísticas).
-- Automatizar pruebas, comentarios en PRs y publicación de la imagen Docker en GitHub Packages.
+### Campos JSON admitidos
 
+`presion_sistolica`, `presion_diastolica`, `nivel_colesterol`, `nivel_glucosa`, `presencia_enfermedad`, `fumador`.
 
-## Estado actual del repositorio
+**Obligatorios:** `presion_sistolica` y `presion_diastolica`.  
+**Regla de negocio:** deben enviarse **al menos tres valores** contando solo campos permitidos con valor informado (las dos presiones cuentan; falta al menos un campo más).
 
-En la rama `main` solo existe este archivo `README.md`. Aún no se ha integrado el código de la unidad 1 ni la configuración de CI/CD; eso se hará en ramas y PRs según la guía del curso.
+## Ejecución local (sin Docker)
 
-## Estructura prevista
+Desde esta carpeta (`servicio_estado_clinico`):
 
-La siguiente organización es la **propuesta** para desarrollar la solución. No implica que todos los archivos existan ya en `main` pero eso es lo que tengo planeado de base para realizar si llego a tener alguna modificacion se estaria sustentando por que fue la necesidad teniendo encuenta que este es un proceso que se debe de mejorar en su ciclo de vida:
-
-```
-CI-CD-mlops-U2/
-├── README.md                 # Documentación del proyecto
-├── app.py                    # Servicio Flask (predicción y reportes)
-├── modelo_simulado.py        # Lógica determinista de predicción
-├── requirements.txt          # Dependencias Python
-├── Dockerfile                # Imagen para despliegue
-├── datos/                    # Archivo(s) de registro de predicciones (estadísticas)
-├── tests/                    # Pruebas unitarias (pytest)
-└── .github/
-    └── workflows/
-        └── workflow.yaml     # Pipeline CI/CD (PR y push a main)
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
 ```
 
-### Flujo de ramas (resumen)
+Abrir el navegador en `http://127.0.0.1:5000/`.
 
-| Rama / etapa | Contenido esperado |
-|--------------|-------------------|
-| `main` | Documentación y, tras los merges, código estable |
-| `solución-inicial` | Archivos de la unidad 1 (sin el MD del pipeline general) |
-| `segunda-versión` | Ajustes opcionales según retroalimentación |
-| Ramas de features | Quinta categoría `ENFERMEDAD TERMINAL` y reporte de estadísticas |
-| `añadir-github-actions` | Workflow: tests en PR, build y push de imagen en `main` |
+### Ejemplo con curl
 
-### Categorías de predicción (objetivo final)
+```bash
+curl -s -X POST http://127.0.0.1:5000/predecir ^
+  -H "Content-Type: application/json" ^
+  -d "{\"presion_sistolica\": 118, \"presion_diastolica\": 76, \"nivel_colesterol\": 1, \"nivel_glucosa\": 1, \"presencia_enfermedad\": 0, \"fumador\": false}"
+```
 
-1. `NO ENFERMO`
-2. `ENFERMEDAD LEVE`
-3. `ENFERMEDAD AGUDA`
-4. `ENFERMEDAD CRÓNICA`
-5. `ENFERMEDAD TERMINAL` *(nuevo requerimiento)*
+En PowerShell puede ser más cómodo usar `Invoke-RestMethod`:
 
-### Reporte para médicos (objetivo final)
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:5000/predecir -Method POST -ContentType "application/json" -Body '{"presion_sistolica":118,"presion_diastolica":76,"nivel_colesterol":1,"nivel_glucosa":1,"presencia_enfermedad":0,"fumador":false}'
+```
 
-- Total de predicciones por categoría.
-- Últimas 5 predicciones.
-- Fecha de la última predicción.
+## Docker
 
-Los resultados se persistirán en archivo de texto y se consultarán desde el servicio desplegado con Docker.
-# CI-CD-mlops-U2
+### Construir la imagen
+
+```bash
+docker build -t estado-clinico-demo .
+```
+
+### Ejecutar el contenedor
+
+```bash
+docker run --rm -p 5000:5000 estado-clinico-demo
+```
+
+Servicio disponible en `http://localhost:5000/predecir` (POST) y `http://localhost:5000/` (formulario).
+
+## Propuesta breve de pipeline MLOps (ilustrativa)
+
+1. **Datos:** ingesta y versionado de tablas o archivos (por ejemplo carpeta `data/` con trazabilidad).
+2. **Calidad:** validación de esquema y rangos antes de servir o entrenar.
+3. **Modelado:** en este trabajo la lógica es una función fija; en un proyecto real habría entrenamiento y registro de artefactos.
+4. **Empaquetado:** imagen Docker con dependencias fijadas (`requirements.txt`).
+5. **Despliegue:** contenedor en máquina local, nube o orquestador según el curso.
+
+---
+
+Trabajo académico; los umbrales no están validados clínicamente.
